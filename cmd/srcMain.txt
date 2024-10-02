@@ -1,0 +1,103 @@
+package main
+
+import (
+	"os"
+	"os/exec"
+	"strings"
+	"time"
+)
+
+const right int = 100
+const up int = 119
+const left int = 97
+const down int = 115
+
+const screeHeight int = 25
+const screenWidth int = 30
+
+var plInt int
+
+func main() {
+	jogo()
+}
+
+type Pos struct {
+	x int
+	y int
+}
+
+func jogo() {
+	exec.Command("stty", "-F", "/dev/tty", "-echo").Run()
+	exec.Command("stty", "-F", "/dev/tty", "cbreak", "min", "1").Run()
+
+	plrPos := Pos{x: 1, y: 1}
+
+	go getInput()
+
+	for {
+
+		//move o player de acordo com a entrada de teclado
+		movePlayer(&plrPos, plInt)
+		checkPlayerColl(&plrPos)
+
+		clear()            //limpa a tela
+		printBoard(plrPos) //printa o mapa
+
+		time.Sleep(time.Millisecond * 500) // espera um tempinho
+	}
+}
+
+func clear() {
+	cmd := exec.Command("clear")
+	cmd.Stdout = os.Stdout
+	cmd.Run()
+}
+
+func movePlayer(plrPos *Pos, playerIntention int) {
+	switch playerIntention {
+	case right:
+		plrPos.x++
+	case up:
+		plrPos.y--
+	case left:
+		plrPos.x--
+	case down:
+		plrPos.y++
+	}
+}
+
+func checkPlayerColl(plrPos *Pos) {
+	//checagem da colisão com as bordas
+	if plrPos.x == -1 || plrPos.y == -1 || plrPos.x == screenWidth || plrPos.y == screeHeight {
+		os.Exit(0)
+	}
+}
+
+func printBoard(plrPos Pos) {
+	var mapa strings.Builder
+	for y := 0; y < screeHeight; y++ {
+		mapa.WriteByte('#')
+		for x := 0; x < screenWidth; x++ {
+			if y == plrPos.y && x == plrPos.x {
+				mapa.WriteByte('*')
+			} else {
+				mapa.WriteByte(' ')
+			}
+		}
+		mapa.WriteByte('#')
+		mapa.WriteByte('\n')
+	}
+	print(mapa.String())
+}
+
+func getInput() {
+	var char []byte = make([]byte, 1)
+	for {
+		os.Stdin.Read(char)
+		number := int(char[0])
+		if number == right || number == up || number == left || number == down {
+			plInt = number
+		}
+	}
+}
+
