@@ -32,16 +32,19 @@ func main() {
 }
 
 func jogo() {
+
+	var gotPoint bool
+
 	cursor.Hide()
 	exec.Command("stty", "-F", "/dev/tty", "-echo").Run()
 	exec.Command("stty", "-F", "/dev/tty", "cbreak", "min", "1").Run()
 
-	var gotPoint bool
 	player := []Pos{{x: 1, y: 1}, {x: 1, y: 1}, {x: 1, y: 1}, {x: 1, y: 1}}
-
 	points := []Pos{{x: 4, y: 4}}
 
 	go getInput()
+
+	//até essa linha tá tudo certo
 
 	for {
 		//move o player de acordo com a entrada de teclado
@@ -57,7 +60,9 @@ func jogo() {
 
 func movePlayer(player *[]Pos, playerIntention int, gotPoint *bool) {
 
+	//essa é a variável se tornará a nova posição da cabeça da cobrinha
 	newPos := (*player)[len(*player)-1]
+
 	switch playerIntention {
 	case right:
 		newPos.x++
@@ -73,6 +78,7 @@ func movePlayer(player *[]Pos, playerIntention int, gotPoint *bool) {
 		*player = append(*player, newPos)
 	}
 
+	//se não pegar ponto, apaga a "cauda" da cobrinha
 	if !*gotPoint {
 		*player = pop(*player, 0)
 	} else {
@@ -98,35 +104,41 @@ func checkPlayerColl(plrPos *Pos, points *[]Pos, gotPoint *bool) {
 }
 
 func printBoard(player, points *[]Pos) {
-	var mapa strings.Builder
-	for y := 0; y < screeHeight; y++ {
-		mapa.WriteByte('#')
-		for x := 0; x < screenWidth; x++ {
-			amIHere := false
-			for _, pos := range *player {
-				if y == pos.y && x == pos.x {
-					mapa.WriteString("█")
-					amIHere = true
-					break
-				}
-			}
-			if !amIHere {
-				for _, pos := range *points {
-					if y == pos.y && x == pos.x {
-						mapa.WriteString("º")
-						amIHere = true
-						break
-					}
-				}
-			}
-			if !amIHere {
-				mapa.WriteByte(' ')
+
+	//O tabuleiro que será printado
+	var BoardStr strings.Builder
+
+	//a matrix que representa o tabuleiro do jogo
+	board := make([][]int, screeHeight)
+	for i := range board {
+		board[i] = make([]int, screenWidth)
+	}
+
+	for _, point := range *points {
+		board[point.y][point.x] = 1
+	}
+
+	for _, segment := range *player {
+		board[segment.y][segment.x] = 2
+	}
+
+	for _, line := range board {
+
+		BoardStr.WriteByte('#')
+		for _, element := range line {
+			switch element {
+			case 1:
+				BoardStr.WriteString("º")
+			case 2:
+				BoardStr.WriteString("█")
+			default:
+				BoardStr.WriteString(" ")
 			}
 		}
-		mapa.WriteByte('#')
-		mapa.WriteByte('\n')
+		BoardStr.WriteString("#\n")
 	}
-	print(mapa.String())
+
+	print(BoardStr.String())
 }
 
 func getInput() {
