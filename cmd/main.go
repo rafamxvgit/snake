@@ -1,3 +1,4 @@
+// Branch matrix refactoring
 package main
 
 import (
@@ -31,21 +32,22 @@ func main() {
 }
 
 func jogo() {
+
+	var gotPoint bool
+
 	cursor.Hide()
 	exec.Command("stty", "-F", "/dev/tty", "-echo").Run()
 	exec.Command("stty", "-F", "/dev/tty", "cbreak", "min", "1").Run()
 
-	var gotPoint bool
 	player := []Pos{{x: 1, y: 1}, {x: 1, y: 1}, {x: 1, y: 1}, {x: 1, y: 1}}
-
-	points := []Pos{{x: 4, y: 4}}
+	points := []Pos{{x: 4, y: 4}, {x: 9, y: 3}, {x: 2, y: 2}}
 
 	go getInput()
 
 	for {
 		//move o player de acordo com a entrada de teclado
 		movePlayer(&player, playerIntention, &gotPoint)
-		checkPlayerColl(&player[len(player)-1], &points, &gotPoint)
+		checkPlayerColl(&player, &points, &gotPoint)
 
 		cursor.Move(0, screeHeight+3) //eu acho que esse +3 eh opcional mas eu tô com preguiça de checar
 		printBoard(&player, &points)  //printa o mapa
@@ -56,7 +58,9 @@ func jogo() {
 
 func movePlayer(player *[]Pos, playerIntention int, gotPoint *bool) {
 
+	//essa é a variável se tornará a nova posição da cabeça da cobrinha
 	newPos := (*player)[len(*player)-1]
+
 	switch playerIntention {
 	case right:
 		newPos.x++
@@ -72,6 +76,7 @@ func movePlayer(player *[]Pos, playerIntention int, gotPoint *bool) {
 		*player = append(*player, newPos)
 	}
 
+	//se não pegar ponto, apaga a "cauda" da cobrinha
 	if !*gotPoint {
 		*player = pop(*player, 0)
 	} else {
@@ -79,14 +84,16 @@ func movePlayer(player *[]Pos, playerIntention int, gotPoint *bool) {
 	}
 }
 
-func checkPlayerColl(plrPos *Pos, points *[]Pos, gotPoint *bool) {
+func checkPlayerColl(player *[]Pos, points *[]Pos, gotPoint *bool) {
+	head := (*player)[len(*player)-1]
+
 	//checagem da colisão com as bordas
-	if plrPos.x == -1 || plrPos.y == -1 || plrPos.x == screenWidth || plrPos.y == screeHeight {
+	if head.x == -1 || head.y == -1 || head.x == screenWidth || head.y == screeHeight {
 		os.Exit(0)
 	}
 
 	for i, pt := range *points {
-		if plrPos.x == pt.x && plrPos.y == pt.y {
+		if head.x == pt.x && head.y == pt.y {
 			*gotPoint = true
 			*points = pop(*points, i)
 			*points = append(*points, Pos{x: rand.Int() % screenWidth, y: rand.Int() % screeHeight})
@@ -94,38 +101,50 @@ func checkPlayerColl(plrPos *Pos, points *[]Pos, gotPoint *bool) {
 		}
 	}
 
+	for _, segment := range (*player)[:len(*player)-1] {
+		if segment.x == head.x && segment.y == head.y {
+			os.Exit(0)
+		}
+	}
+
 }
 
 func printBoard(player, points *[]Pos) {
-	var mapa strings.Builder
-	for y := 0; y < screeHeight; y++ {
-		mapa.WriteByte('#')
-		for x := 0; x < screenWidth; x++ {
-			amIHere := false
-			for _, pos := range *player {
-				if y == pos.y && x == pos.x {
-					mapa.WriteString("█")
-					amIHere = true
-					break
-				}
-			}
-			if !amIHere {
-				for _, pos := range *points {
-					if y == pos.y && x == pos.x {
-						mapa.WriteString("º")
-						amIHere = true
-						break
-					}
-				}
-			}
-			if !amIHere {
-				mapa.WriteByte(' ')
+
+	//O tabuleiro que será printado
+	var BoardStr strings.Builder
+
+	//a matrix que representa o tabuleiro do jogo
+	board := make([][]int, screeHeight)
+	for i := range board {
+		board[i] = make([]int, screenWidth)
+	}
+
+	for _, point := range *points {
+		board[point.y][point.x] = 1
+	}
+
+	for _, segment := range *player {
+		board[segment.y][segment.x] = 2
+	}
+
+	for _, line := range board {
+
+		BoardStr.WriteByte('#')
+		for _, element := range line {
+			switch element {
+			case 1:
+				BoardStr.WriteString("º")
+			case 2:
+				BoardStr.WriteString("█")
+			default:
+				BoardStr.WriteString(" ")
 			}
 		}
-		mapa.WriteByte('#')
-		mapa.WriteByte('\n')
+		BoardStr.WriteString("#\n")
 	}
-	print(mapa.String())
+
+	print(BoardStr.String())
 }
 
 func getInput() {
