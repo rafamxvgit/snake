@@ -5,6 +5,8 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+
+	"atomicgo.dev/cursor"
 )
 
 const right int = 100
@@ -12,7 +14,7 @@ const up int = 119
 const left int = 97
 const down int = 115
 
-const screeHeight int = 25
+const screeHeight int = 13
 const screenWidth int = 30
 
 var playerIntention int = 100
@@ -23,10 +25,12 @@ type Pos struct {
 }
 
 func main() {
+	clear()
 	jogo()
 }
 
 func jogo() {
+	cursor.Hide()
 	exec.Command("stty", "-F", "/dev/tty", "-echo").Run()
 	exec.Command("stty", "-F", "/dev/tty", "cbreak", "min", "1").Run()
 
@@ -42,7 +46,7 @@ func jogo() {
 		movePlayer(&player, playerIntention, &gotPoint)
 		checkPlayerColl(&player[len(player)-1], points, &gotPoint)
 
-		clear()                      //limpa a tela
+		cursor.Move(0, screeHeight+3)
 		printBoard(&player, &points) //printa o mapa
 
 		time.Sleep(time.Millisecond * 500) // espera um tempinho
