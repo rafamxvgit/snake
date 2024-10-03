@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math/rand"
 	"os"
 	"os/exec"
 	"strings"
@@ -44,10 +45,10 @@ func jogo() {
 	for {
 		//move o player de acordo com a entrada de teclado
 		movePlayer(&player, playerIntention, &gotPoint)
-		checkPlayerColl(&player[len(player)-1], points, &gotPoint)
+		checkPlayerColl(&player[len(player)-1], &points, &gotPoint)
 
-		cursor.Move(0, screeHeight+3)
-		printBoard(&player, &points) //printa o mapa
+		cursor.Move(0, screeHeight+3) //eu acho que esse +3 eh opcional mas eu tô com preguiça de checar
+		printBoard(&player, &points)  //printa o mapa
 
 		time.Sleep(time.Millisecond * 500) // espera um tempinho
 	}
@@ -78,15 +79,17 @@ func movePlayer(player *[]Pos, playerIntention int, gotPoint *bool) {
 	}
 }
 
-func checkPlayerColl(plrPos *Pos, points []Pos, gotPoint *bool) {
+func checkPlayerColl(plrPos *Pos, points *[]Pos, gotPoint *bool) {
 	//checagem da colisão com as bordas
 	if plrPos.x == -1 || plrPos.y == -1 || plrPos.x == screenWidth || plrPos.y == screeHeight {
 		os.Exit(0)
 	}
 
-	for _, pt := range points {
+	for i, pt := range *points {
 		if plrPos.x == pt.x && plrPos.y == pt.y {
 			*gotPoint = true
+			*points = pop(*points, i)
+			*points = append(*points, Pos{x: rand.Int() % screenWidth, y: rand.Int() % screeHeight})
 			break
 		}
 	}
