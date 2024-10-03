@@ -40,16 +40,14 @@ func jogo() {
 	exec.Command("stty", "-F", "/dev/tty", "cbreak", "min", "1").Run()
 
 	player := []Pos{{x: 1, y: 1}, {x: 1, y: 1}, {x: 1, y: 1}, {x: 1, y: 1}}
-	points := []Pos{{x: 4, y: 4}}
+	points := []Pos{{x: 4, y: 4}, {x: 9, y: 3}, {x: 2, y: 2}}
 
 	go getInput()
-
-	//até essa linha tá tudo certo
 
 	for {
 		//move o player de acordo com a entrada de teclado
 		movePlayer(&player, playerIntention, &gotPoint)
-		checkPlayerColl(&player[len(player)-1], &points, &gotPoint)
+		checkPlayerColl(&player, &points, &gotPoint)
 
 		cursor.Move(0, screeHeight+3) //eu acho que esse +3 eh opcional mas eu tô com preguiça de checar
 		printBoard(&player, &points)  //printa o mapa
@@ -86,18 +84,26 @@ func movePlayer(player *[]Pos, playerIntention int, gotPoint *bool) {
 	}
 }
 
-func checkPlayerColl(plrPos *Pos, points *[]Pos, gotPoint *bool) {
+func checkPlayerColl(player *[]Pos, points *[]Pos, gotPoint *bool) {
+	head := (*player)[len(*player)-1]
+
 	//checagem da colisão com as bordas
-	if plrPos.x == -1 || plrPos.y == -1 || plrPos.x == screenWidth || plrPos.y == screeHeight {
+	if head.x == -1 || head.y == -1 || head.x == screenWidth || head.y == screeHeight {
 		os.Exit(0)
 	}
 
 	for i, pt := range *points {
-		if plrPos.x == pt.x && plrPos.y == pt.y {
+		if head.x == pt.x && head.y == pt.y {
 			*gotPoint = true
 			*points = pop(*points, i)
 			*points = append(*points, Pos{x: rand.Int() % screenWidth, y: rand.Int() % screeHeight})
 			break
+		}
+	}
+
+	for _, segment := range (*player)[:len(*player)-1] {
+		if segment.x == head.x && segment.y == head.y {
+			os.Exit(0)
 		}
 	}
 
